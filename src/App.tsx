@@ -44,6 +44,7 @@ export default function App() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
+  const cancelRef = useRef(false)
   const active = tools.find(t => t.id === tool)!
   const addFiles = (list: FileList | null) => {
     if (!list) return
@@ -66,6 +67,7 @@ export default function App() {
     if (!files.length) { setError('Choose at least one file first.'); return }
     if (files.some(x => x.file.size > 100 * 1024 * 1024)) { setError('A file exceeds the 100 MB per-file limit.'); return }
     if (files.length > 40) { setError('Maximum 40 files per operation.'); return }
+    cancelRef.current = false
     setBusy(true)
     try {
       if (tool === 'compress') {
@@ -75,6 +77,7 @@ export default function App() {
         const pdf = await pdfjsLib.getDocument({ data: await files[0].file.arrayBuffer() }).promise
         const out = await PDFDocument.create()
         for (let n = 1; n <= pdf.numPages; n++) {
+          if (cancelRef.current) throw new Error('Processing cancelled.')
           setProgress(`Processing page ${n} of ${pdf.numPages}`)
           const page = await pdf.getPage(n)
           const baseViewport = page.getViewport({ scale: 1 })
@@ -119,6 +122,7 @@ export default function App() {
       } else if (tool === 'images') {
         const out = await PDFDocument.create()
         for (const item of files) {
+          if (cancelRef.current) throw new Error('Processing cancelled.')
           const bytes = new Uint8Array(await item.file.arrayBuffer())
           const isPng = item.file.name.toLowerCase().endsWith('.png') || item.file.type === 'image/png'
           const valid = isPng ? bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 : bytes[0] === 0xff && bytes[1] === 0xd8
@@ -133,6 +137,7 @@ export default function App() {
         if (files.length < 2) throw new Error('Add at least two PDF files to merge.')
         const out = await PDFDocument.create()
         for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
+          if (cancelRef.current) throw new Error('Processing cancelled.')
           setProgress(`Merging file ${fileIndex + 1} of ${files.length}`)
           const item = files[fileIndex]
           const src = await PDFDocument.load(await item.file.arrayBuffer())
@@ -154,6 +159,7 @@ export default function App() {
           if (!selected.length) throw new Error('Enter at least one page number.')
           const zip = new JSZip()
           for (const index of selected) {
+            if (cancelRef.current) throw new Error('Processing cancelled.')
             const out = await PDFDocument.create()
             const [page] = await out.copyPages(src, [index])
             out.addPage(page)
@@ -196,7 +202,7 @@ export default function App() {
         {(tool==='split'||tool==='delete'||tool==='extract')&&<label className="field-label">PAGE NUMBERS <input value={pages} onChange={e=>setPages(e.target.value)} placeholder="e.g. 1, 3-5, 8"/><small>{tool==='delete'?'Pages to remove':'Pages to include'} · Comma-separated ranges</small></label>}
         {tool==='rotate'&&<label className="field-label">ROTATION ANGLE <select value={rotation} onChange={e=>setRotation(e.target.value)}><option value="90">90° clockwise</option><option value="180">180°</option><option value="270">270° clockwise</option></select></label>}
         {tool==='compress'&&<><label className="field-label">IMAGE QUALITY <select value={compressionQuality} onChange={e=>setCompressionQuality(e.target.value)}><option value="0.45">Smaller file · lower quality</option><option value="0.65">Balanced</option><option value="0.82">Higher quality · larger file</option></select></label><p className="compression-warning">Compression converts pages into images. Searchable text, links, forms and vector quality will not be preserved. File size reduction is not guaranteed.</p></>}
-        <button className="primary-btn" onClick={run} disabled={busy||files.length===0}>{busy?<><LoaderCircle className="spin" size={18}/> Processing locally…</>:<>Process PDF <ArrowDownToLine size={17}/></>}</button>
+        <div className="action-row"><button className="primary-btn" onClick={run} disabled={busy||files.length===0}>{busy?<><LoaderCircle className="spin" size={18}/> Processing locally…</>:<>Process PDF <ArrowDownToLine size={17}/></>}</button>{busy&&<button className="cancel-btn" onClick={()=>{cancelRef.current=true;setProgress('Cancelling after the current page…')}}>Cancel</button>}</div>
         {progress && <div className="notice" role="status">{progress}</div>}{error&&<div className="notice error"><AlertCircle size={17}/>{error}</div>}{message&&<div className="notice success"><CheckCircle2 size={17}/>{message}</div>}
         <p className="panel-foot"><LockKeyhole size={13}/> Files are processed locally in your browser and are never uploaded.</p>
       </section></section>
