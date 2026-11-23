@@ -31,3 +31,5 @@ button:disabled{cursor:not-allowed}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 
 .skip-link{position:fixed;left:12px;top:-60px;z-index:100;background:#fff;color:#111;padding:10px 14px;border-radius:8px;font-weight:700}.skip-link:focus{top:12px}
+
+.file-row[draggable='true']{cursor:grab}.file-row[draggable='true']:active{cursor:grabbing}.drag-handle{color:#9b9ca5;font-size:18px;line-height:1;user-select:none;cursor:grab}
