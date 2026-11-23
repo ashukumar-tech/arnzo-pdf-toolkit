@@ -10,6 +10,7 @@ PDF contents are processed in the user's browser. The application is designed no
 
 ## Tools
 - Merge PDF files
+- Compress PDF pages locally as JPEG images; output may not be smaller and text is not searchable
 - Split PDF pages
 - Rotate PDF pages
 - Delete selected pages
