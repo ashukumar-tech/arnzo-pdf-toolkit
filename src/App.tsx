@@ -66,6 +66,7 @@ export default function App() {
     if (!files.length) { setError('Choose at least one file first.'); return }
     if (files.some(x => x.file.size > 100 * 1024 * 1024)) { setError('A file exceeds the 100 MB per-file limit.'); return }
     if (files.length > 40) { setError('Maximum 40 files per operation.'); return }
+    if (files.reduce((total, item) => total + item.file.size, 0) > 200 * 1024 * 1024) { setError('Selected files exceed the 200 MB total limit. Process smaller batches.'); return }
     cancelRef.current = false
     setBusy(true)
     try {
@@ -106,6 +107,7 @@ export default function App() {
           setProgress(`Exporting page ${n} of ${pdf.numPages}`)
           const page = await pdf.getPage(n)
           const viewport = page.getViewport({ scale: 1.6 })
+          if (viewport.width * viewport.height > 20000000) throw new Error('This page is too large to export safely on this device. Try a smaller PDF.')
           const canvas = document.createElement('canvas')
           const context = canvas.getContext('2d')
           if (!context) throw new Error('Your browser could not create an image canvas.')
