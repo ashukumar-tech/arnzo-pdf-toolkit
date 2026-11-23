@@ -20,3 +20,5 @@
 .cancel-btn{padding:0 18px;border:1px solid #ff59641f;border-radius:10px;background:#ff35400d;color:#ff858d;font-weight:600;cursor:pointer}
 .cancel-btn:hover{background:#ff35401a}
 @media(max-width:480px){.action-row{flex-direction:column}.cancel-btn{min-height:44px}}
+
+.brand-logo{width:38px;height:38px;display:block;flex:0 0 auto;object-fit:contain}
