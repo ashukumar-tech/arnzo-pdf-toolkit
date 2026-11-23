@@ -1,0 +1,69 @@
+# ARNZO PDF Toolkit — Full Product Information
+
+## Product identity
+ARNZO PDF Toolkit is a free browser-based PDF utility website published by ARNZO. It is available at https://pdf.arnzo.com/. It is intended for people who need common PDF page organization and image conversion tasks without installing desktop software or creating an account.
+
+## Short answer
+ARNZO PDF Toolkit lets users merge, split, rotate, compress, extract and delete PDF pages, convert JPG/PNG images into PDF, and export PDF pages as PNG images. PDF content is processed locally in the browser; it is not uploaded to ARNZO servers for processing.
+
+## Publisher
+ARNZO — https://arnzo.com/
+
+## Tools and exact behavior
+### Merge PDF
+Accepts two or more PDF files and copies their pages into one combined PDF. The user selects the files and downloads the merged output.
+
+### Split PDF
+Accepts one PDF and page numbers or ranges such as 1, 3-5, 8. Exports each selected page as an individual PDF inside a ZIP archive.
+
+### Extract pages
+Creates a single new PDF containing selected pages from one source PDF.
+
+### Delete pages
+Removes selected page numbers from one PDF and saves the remaining pages as a new PDF. Deleting every page is blocked.
+
+### Rotate PDF
+Rotates every page by 90, 180 or 270 degrees clockwise.
+
+### Images to PDF
+Accepts JPG and PNG image files. Each selected image is placed on a separate PDF page.
+
+### PDF to images
+Renders each page of one PDF as a PNG image and downloads the page images in a ZIP archive.
+
+### Compress PDF
+Renders PDF pages and embeds them as JPEG images at a selectable quality. This is image-based compression, not lossless PDF optimization. It does not preserve searchable/selectable text, hyperlinks, form fields or vector graphics. The resulting file may not be smaller than the original.
+
+## Privacy and security
+Files are read from the user's local device through browser file APIs. PDF parsing, editing, rendering, and generated downloads happen client-side. The application does not send PDF document contents to an ARNZO server. No user account or backend service is required for PDF processing. The website uses Google Fonts for typography; font requests do not include the user's PDF document contents.
+
+## Device compatibility
+The site is responsive and designed for modern desktop and mobile browsers with JavaScript, File API, Canvas, Blob and object URL support. Large or complex PDFs can consume substantial memory; practical limits depend on the device and browser.
+
+## Getting started
+1. Visit https://pdf.arnzo.com/.
+2. Choose the tool from the PDF Tools list.
+3. Select or drop files into the upload area.
+4. Enter page ranges or choose a compression quality when prompted.
+5. Select Process PDF and save the generated output.
+
+## Frequently asked questions
+**Is it free?** Yes, the tools are free to use and do not require an account.
+
+**Are files uploaded?** No. PDF contents are processed locally in the browser, not uploaded to ARNZO servers.
+
+**Can it merge PDFs?** Yes. Choose Merge PDF and select at least two PDFs.
+
+**Can it split a PDF?** Yes. Select page numbers or ranges; each selected page is saved separately in a ZIP archive.
+
+**Does compression preserve text?** No. The current compression tool rasterizes pages to JPEG images, so text is no longer searchable/selectable and links, forms and vector fidelity are not preserved.
+
+**Can I use it on a phone?** Yes, in modern mobile browsers. Large PDFs may exceed available memory.
+
+## Official URLs
+- Product homepage: https://pdf.arnzo.com/
+- FAQ: https://pdf.arnzo.com/#faq
+- Privacy and local processing: https://pdf.arnzo.com/#privacy
+- Sitemap: https://pdf.arnzo.com/sitemap.xml
+- Standard LLM summary: https://pdf.arnzo.com/llms.txt
+- Publisher: https://arnzo.com/
