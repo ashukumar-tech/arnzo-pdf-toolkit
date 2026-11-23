@@ -77,8 +77,8 @@ export default function App() {
     if (files.reduce((total, item) => total + item.file.size, 0) > MAX_TOTAL_BYTES) { setError('Selected files exceed the 100 MB total limit. Process smaller batches.'); return }
     cancelRef.current = false
     setBusy(true)
-    let pdfLoadingTask: { destroy: () => Promise<void> } | undefined
-    let pdfDocument: { destroy: () => Promise<void> } | undefined
+    let pdfLoadingTask: any
+    let pdfDocument: any
     try {
       const { PDFDocument, degrees } = await import('pdf-lib')
       if (tool === 'compress') {
