@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react'
 import { FilePlus2, Files, Scissors, RotateCw, Trash2, FileImage, ShieldCheck, LockKeyhole, ArrowDownToLine, X, ChevronDown, Menu, CheckCircle2, AlertCircle, LoaderCircle, FileText, Sparkles } from 'lucide-react'
-import { PDFDocument, degrees } from 'pdf-lib'
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 
 type Tool = 'merge' | 'split' | 'rotate' | 'delete' | 'extract' | 'images' | 'pdfImages' | 'compress'
@@ -70,6 +69,7 @@ export default function App() {
     cancelRef.current = false
     setBusy(true)
     try {
+      const { PDFDocument, degrees } = await import('pdf-lib')
       if (tool === 'compress') {
         if (files.length !== 1) throw new Error('Choose exactly one PDF to compress.')
         const pdfjsLib = await import('pdfjs-dist')
