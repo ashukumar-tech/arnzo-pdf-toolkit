@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react'
-import { FilePlus2, Files, Scissors, RotateCw, Trash2, FileImage, ShieldCheck, LockKeyhole, ArrowDownToLine, X, Plus, ChevronDown, Menu, CheckCircle2, AlertCircle, LoaderCircle, FileText, Sparkles } from 'lucide-react'
+import { FilePlus2, Files, Scissors, RotateCw, Trash2, FileImage, ShieldCheck, LockKeyhole, ArrowDownToLine, X, ChevronDown, Menu, CheckCircle2, AlertCircle, LoaderCircle, FileText, Sparkles } from 'lucide-react'
 import { PDFDocument, degrees } from 'pdf-lib'
 import JSZip from 'jszip'
 import * as pdfjsLib from 'pdfjs-dist'
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString()
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
 
 type Tool = 'merge' | 'split' | 'rotate' | 'delete' | 'extract' | 'images' | 'pdfImages'
 type Picked = { id: string; file: File }
@@ -65,7 +66,7 @@ export default function App() {
           const context = canvas.getContext('2d')
           if (!context) throw new Error('Your browser could not create an image canvas.')
           canvas.width = Math.ceil(viewport.width); canvas.height = Math.ceil(viewport.height)
-          await page.render({ canvas, canvasContext: context, viewport }).promise
+          await page.render({ canvasContext: context, viewport }).promise
           const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error('Could not export page image.')), 'image/png'))
           zip.file('page-' + String(n).padStart(3, '0') + '.png', blob)
           canvas.width = 0; canvas.height = 0
