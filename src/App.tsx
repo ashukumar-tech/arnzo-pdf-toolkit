@@ -58,7 +58,7 @@ export default function App() {
         pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
         const pdf = await pdfjsLib.getDocument({ data: await files[0].file.arrayBuffer() }).promise
         const { default: JSZip } = await import('jszip')
-          const zip = new JSZip()
+        const zip = new JSZip()
         for (let n = 1; n <= pdf.numPages; n++) {
           const page = await pdf.getPage(n)
           const viewport = page.getViewport({ scale: 1.6 })
@@ -102,6 +102,7 @@ export default function App() {
           src.getPages().forEach(p => p.setRotation(degrees((p.getRotation().angle + angle) % 360)))
           save(await src.save(), 'arnzo-rotated.pdf')
         } else if (tool === 'split') {
+          const { default: JSZip } = await import('jszip')
           const selected = pageIndexes(pages, total)
           if (!selected.length) throw new Error('Enter at least one page number.')
           const zip = new JSZip()
