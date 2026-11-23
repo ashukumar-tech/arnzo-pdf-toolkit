@@ -82,7 +82,8 @@ export default function App() {
           const canvas = document.createElement('canvas')
           const context = canvas.getContext('2d')
           if (!context) throw new Error('Your browser could not create an image canvas.')
-          if (viewport.width * viewport.height > 20000000) throw new Error('This page is too large to render safely on this device. Try a smaller PDF.')\n          canvas.width = Math.ceil(viewport.width); canvas.height = Math.ceil(viewport.height)
+          if (viewport.width * viewport.height > 20000000) throw new Error('This page is too large to render safely on this device. Try a smaller PDF.')
+          canvas.width = Math.ceil(viewport.width); canvas.height = Math.ceil(viewport.height)
           await page.render({ canvasContext: context, viewport }).promise
           const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error('Could not compress this page.')), 'image/jpeg', Number(compressionQuality)))
           const image = await out.embedJpg(new Uint8Array(await blob.arrayBuffer()))
@@ -119,7 +120,11 @@ export default function App() {
         const out = await PDFDocument.create()
         for (const item of files) {
           const bytes = await item.file.arrayBuffer()
-          const isPng = item.file.name.toLowerCase().endsWith('.png') || item.file.type === 'image/png'\n          const valid = isPng ? bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 : bytes[0] === 0xff && bytes[1] === 0xd8\n          if (!valid) throw new Error(`${item.file.name} is not a valid JPG or PNG image.`)\n          setProgress(`Adding image ${files.indexOf(item)+1} of ${files.length}`)\n          const image = isPng ? await out.embedPng(bytes) : await out.embedJpg(bytes)
+          const isPng = item.file.name.toLowerCase().endsWith('.png') || item.file.type === 'image/png'
+          const valid = isPng ? bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 : bytes[0] === 0xff && bytes[1] === 0xd8
+          if (!valid) throw new Error(`${item.file.name} is not a valid JPG or PNG image.`)
+          setProgress(`Adding image ${files.indexOf(item)+1} of ${files.length}`)
+          const image = isPng ? await out.embedPng(bytes) : await out.embedJpg(bytes)
           const page = out.addPage([image.width, image.height])
           page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height })
         }
@@ -130,14 +135,14 @@ export default function App() {
         for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
           setProgress(`Merging file ${fileIndex + 1} of ${files.length}`)
           const item = files[fileIndex]
-          const raw = new Uint8Array(await item.file.slice(0, 5).arrayBuffer())\n          const src = await PDFDocument.load(await item.file.arrayBuffer())
+          const src = await PDFDocument.load(await item.file.arrayBuffer())
           const copied = await out.copyPages(src, src.getPageIndices())
           copied.forEach(p => out.addPage(p))
         }
         save(await out.save(), 'arnzo-merged.pdf')
       } else {
         if (files.length !== 1) throw new Error('Choose exactly one PDF for this action.')
-        const signature = new Uint8Array(await files[0].file.slice(0, 5).arrayBuffer())\n        const src = await PDFDocument.load(await files[0].file.arrayBuffer())
+        const src = await PDFDocument.load(await files[0].file.arrayBuffer())
         const total = src.getPageCount()
         if (tool === 'rotate') {
           const angle = Number(rotation)
