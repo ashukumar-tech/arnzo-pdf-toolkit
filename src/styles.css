@@ -14,3 +14,9 @@
 .file-row button:disabled{opacity:.3;cursor:not-allowed}
 .nav-open{display:flex!important}
 @media(max-width:560px){.topbar{position:relative}.topbar nav.nav-open{position:absolute;z-index:20;top:58px;right:0;display:flex!important;flex-direction:column;align-items:stretch;gap:0;min-width:170px;padding:8px;border:1px solid #ffffff20;border-radius:10px;background:#191a20;box-shadow:0 12px 30px #0009}.topbar nav.nav-open a{padding:11px;font-size:12px}}
+
+.action-row{display:flex;gap:10px;align-items:stretch}
+.action-row .primary-btn{flex:1}
+.cancel-btn{padding:0 18px;border:1px solid #ff59641f;border-radius:10px;background:#ff35400d;color:#ff858d;font-weight:600;cursor:pointer}
+.cancel-btn:hover{background:#ff35401a}
+@media(max-width:480px){.action-row{flex-direction:column}.cancel-btn{min-height:44px}}
