@@ -160,8 +160,10 @@ export default function App() {
           setProgress(`Merging file ${fileIndex + 1} of ${files.length}`)
           const item = files[fileIndex]
           const src = await PDFDocument.load(await item.file.arrayBuffer())
+          const sourcePageCount = src.getPageCount()
+          if (sourcePageCount > MAX_PAGES || out.getPageCount() + sourcePageCount > MAX_PAGES) throw new Error(`Merged documents are limited to ${MAX_PAGES} pages in total.`)
           const copied = await out.copyPages(src, src.getPageIndices())
-          copied.forEach(p => out.addPage(p))
+          for (let i = 0; i < copied.length; i++) { if (cancelRef.current) throw new Error('Processing cancelled.'); out.addPage(copied[i]) }
         }
         save(await out.save(), 'arnzo-merged.pdf')
       } else {
@@ -186,7 +188,9 @@ export default function App() {
             out.addPage(page)
             zip.file('page-' + String(index + 1).padStart(3, '0') + '.pdf', await out.save())
           }
-          const archive = await zip.generateAsync({ type: 'blob' })
+          if (cancelRef.current) throw new Error('Processing cancelled.')
+          setProgress('Building ZIP archive…')
+          const archive = await zip.generateAsync({ type: 'blob' }, meta => setProgress(`Building ZIP archive… ${Math.round(meta.percent)}%`))
           downloadBlob(archive, 'arnzo-split-pages.zip')
         } else {
           const selected = pageIndexes(pages, total)
@@ -201,9 +205,13 @@ export default function App() {
       }
       setProgress(''); setMessage('Your PDF is ready. The file was processed on this device.')
     } catch (e) { setError(e instanceof Error ? e.message : 'Could not process this file. Check that it is a valid PDF.') }
-    finally { setBusy(false); setProgress('') }
+    finally {
+      try { await pdfDocument?.destroy() } catch { /* best-effort PDF.js cleanup */ }
+      try { await pdfLoadingTask?.destroy() } catch { /* best-effort worker cleanup */ }
+      setBusy(false); setProgress('')
+    }
   }
-  const switchTool = (id: Tool) => { setTool(id); setFiles([]); setError(''); setMessage(''); setPages(''); setMenuOpen(false) }
+  const switchTool = (id: Tool) => { if (busy) return; setTool(id); setFiles([]); setError(''); setMessage(''); setPages(''); setMenuOpen(false) }
   const moveFile = (index: number, direction: number) => setFiles(old => {
     const next = [...old], target = index + direction
     if (target < 0 || target >= next.length) return old
