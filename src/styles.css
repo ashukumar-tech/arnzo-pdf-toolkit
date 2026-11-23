@@ -22,3 +22,10 @@
 @media(max-width:480px){.action-row{flex-direction:column}.cancel-btn{min-height:44px}}
 
 .brand-logo{width:38px;height:38px;display:block;flex:0 0 auto;object-fit:contain}
+
+
+/* Keyboard accessibility and reduced-motion support */
+:where(a,button,input,select,[role="button"],summary):focus-visible{outline:2px solid #ff7b85;outline-offset:3px;border-radius:6px}
+.dropzone:focus-visible{border-color:#ff7b85;box-shadow:0 0 0 3px #f0445230}
+button:disabled{cursor:not-allowed}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
