@@ -11,6 +11,7 @@ PDF files are processed locally on the user's device. The application does not u
 ## Tools
 
 - Merge multiple PDF files
+- Compress PDFs by rasterizing pages at a selectable JPEG quality (text and links are not preserved)
 - Split selected pages into individual PDFs (ZIP download)
 - Rotate PDF pages
 - Delete selected pages
