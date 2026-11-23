@@ -1,0 +1,20 @@
+# ARNZO PDF Toolkit
+
+> Free, privacy-first PDF tools that process documents locally in the browser.
+
+Website: https://pdf.arnzo.com/
+Publisher: ARNZO (https://arnzo.com/)
+
+## Privacy
+PDF contents are processed in the user's browser. The application is designed not to upload PDF documents to ARNZO servers. No account is required.
+
+## Tools
+- Merge PDF files
+- Split PDF pages
+- Rotate PDF pages
+- Delete selected pages
+- Extract selected pages
+- Convert JPG and PNG images to PDF
+
+## Technology
+React, TypeScript, Vite and pdf-lib.
