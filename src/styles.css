@@ -29,3 +29,5 @@
 .dropzone:focus-visible{border-color:#ff7b85;box-shadow:0 0 0 3px #f0445230}
 button:disabled{cursor:not-allowed}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+.skip-link{position:fixed;left:12px;top:-60px;z-index:100;background:#fff;color:#111;padding:10px 14px;border-radius:8px;font-weight:700}.skip-link:focus{top:12px}
