@@ -52,6 +52,7 @@ export default function App() {
   const [error, setError] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const cancelRef = useRef(false)
+  const dragIndexRef = useRef<number | null>(null)
   const active = tools.find(t => t.id === tool)!
   const addFiles = (list: FileList | null) => {
     if (!list) return
@@ -218,6 +219,13 @@ export default function App() {
     ;[next[index], next[target]] = [next[target], next[index]]
     return next
   })
+  const reorderFile = (from: number, to: number) => setFiles(old => {
+    if (from === to || from < 0 || to < 0 || from >= old.length || to >= old.length) return old
+    const next = [...old]
+    const [picked] = next.splice(from, 1)
+    next.splice(to, 0, picked)
+    return next
+  })
   return <div className="app-shell">
     <header className="topbar"><a className="brand" href="#"><img className="brand-logo" src="/arnzo-pdf-logo.svg" alt="ARNZO logo" width="38" height="38"/><span>ARNZO<span className="brand-sub">PDF TOOLKIT</span></span></a><nav className={menuOpen ? 'nav-open' : ''}><a href="#tools" onClick={() => setMenuOpen(false)}>All tools</a><a href="#privacy" onClick={() => setMenuOpen(false)}>Privacy</a><a href="https://arnzo.com" target="_blank" rel="noreferrer">ARNZO.com <ArrowDownToLine size={13}/></a></nav><button className="mobile-menu" aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen} onClick={() => setMenuOpen(v => !v)}><Menu/></button></header>
     <main>
@@ -225,7 +233,7 @@ export default function App() {
       <section className="workspace" id="tools"><aside className="tool-list"><div className="section-label">PDF TOOLS <span>08</span></div>{tools.map(t => { const Icon=t.icon; return <button key={t.id} className={tool===t.id?'tool-item selected':'tool-item'} onClick={()=>switchTool(t.id)}><Icon size={18}/><span><b>{t.name}</b><small>{t.desc}</small></span><ChevronDown className="tool-chevron" size={15}/></button> })}</aside>
       <section className="panel"><div className="panel-head"><div><div className="panel-kicker">ARNZO WORKSPACE</div><h2>{active.name}</h2><p>{active.desc}</p></div><span className="local-pill"><span/> LOCAL PROCESSING</span></div>
         <div className="dropzone" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();addFiles(e.dataTransfer.files)}} onClick={()=>inputRef.current?.click()} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();inputRef.current?.click()}}}><input ref={inputRef} type="file" hidden multiple={tool==='merge'||tool==='images'} accept={tool==='images'?'.jpg,.jpeg,.png':'application/pdf,.pdf'} onChange={e=>{addFiles(e.target.files);e.target.value=''}}/><div className="upload-icon"><FilePlus2 size={23}/></div><b>Drop your {tool==='images'?'images':'PDF'} here</b><span>or <u>browse files</u> from your device</span><small>{tool==='images'?'JPG and PNG supported':'PDF files only'} · Up to 50 MB each · Files stay on this device</small></div>
-        {files.length>0&&<div className="file-list"><div className="file-list-title">Selected files <span>{files.length}</span></div>{files.map((f, index) => <div className="file-row" key={f.id}><FileText size={17}/><span>{f.file.name}<small>{(f.file.size/1024/1024).toFixed(2)} MB</small></span>{tool === 'merge' && <><button aria-label="Move file up" disabled={index === 0} onClick={() => moveFile(index, -1)}>↑</button><button aria-label="Move file down" disabled={index === files.length - 1} onClick={() => moveFile(index, 1)}>↓</button></>}<button aria-label="Remove file" onClick={() => setFiles(old => old.filter(x => x.id !== f.id))}><X size={16}/></button></div>)}</div>}
+        {files.length>0&&<div className="file-list"><div className="file-list-title">Selected files <span>{files.length}</span></div>{files.map((f, index) => <div className="file-row" key={f.id} draggable={tool === 'merge'} onDragStart={() => { dragIndexRef.current = index }} onDragOver={e => { if (tool === 'merge') e.preventDefault() }} onDrop={e => { e.preventDefault(); if (dragIndexRef.current !== null) reorderFile(dragIndexRef.current, index); dragIndexRef.current = null }} onDragEnd={() => { dragIndexRef.current = null }}><FileText size={17}/><span>{f.file.name}<small>{(f.file.size/1024/1024).toFixed(2)} MB</small></span>{tool === 'merge' && <><span className="drag-handle" aria-hidden="true">⠿</span><button aria-label="Move file up" disabled={index === 0} onClick={() => moveFile(index, -1)}>↑</button><button aria-label="Move file down" disabled={index === files.length - 1} onClick={() => moveFile(index, 1)}>↓</button></>}<button aria-label="Remove file" onClick={() => setFiles(old => old.filter(x => x.id !== f.id))}><X size={16}/></button></div>)}</div>}
         {(tool==='split'||tool==='delete'||tool==='extract')&&<label className="field-label">PAGE NUMBERS <input value={pages} onChange={e=>setPages(e.target.value)} placeholder="e.g. 1, 3-5, 8"/><small>{tool==='delete'?'Pages to remove':'Pages to include'} · Comma-separated ranges</small></label>}
         {tool==='rotate'&&<label className="field-label">ROTATION ANGLE <select value={rotation} onChange={e=>setRotation(e.target.value)}><option value="90">90° clockwise</option><option value="180">180°</option><option value="270">270° clockwise</option></select></label>}
         {tool==='compress'&&<><label className="field-label">IMAGE QUALITY <select value={compressionQuality} onChange={e=>setCompressionQuality(e.target.value)}><option value="0.45">Smaller file · lower quality</option><option value="0.65">Balanced</option><option value="0.82">Higher quality · larger file</option></select></label><p className="compression-warning">Compression converts pages into images. Searchable text, links, forms and vector quality will not be preserved. File size reduction is not guaranteed.</p></>}
