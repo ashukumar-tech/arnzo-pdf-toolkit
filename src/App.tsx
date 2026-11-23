@@ -55,7 +55,7 @@ export default function App() {
     const rejected = candidates.length - accepted.length
     setFiles(old => {
       const seen = new Set(old.map(x => `${x.file.name}:${x.file.size}:${x.file.lastModified}`))
-      const fresh = accepted.filter(file => !seen.has(`${file.name}:${file.size}:${file.lastModified}`))
+      const fresh = accepted.filter(file => { const key = `${file.name}:${file.size}:${file.lastModified}`; if (seen.has(key)) return false; seen.add(key); return true })
       return [...old, ...fresh.map(file => ({ id: uid(), file }))]
     })
     setError(rejected ? `${rejected} unsupported file(s) skipped. Choose ${tool === 'images' ? 'JPG or PNG' : 'PDF'} files.` : '')
