@@ -43,3 +43,13 @@ PDF files are selected from the user's device and processed client-side using br
 - Privacy details: https://pdf.arnzo.com/#privacy
 - Sitemap: https://pdf.arnzo.com/sitemap.xml
 - ARNZO: https://arnzo.com/
+
+## Dedicated tool guides
+- Merge PDF Online: https://pdf.arnzo.com/merge-pdf/
+- Split PDF Online: https://pdf.arnzo.com/split-pdf/
+- Compress PDF Online: https://pdf.arnzo.com/compress-pdf/
+- Rotate PDF Online: https://pdf.arnzo.com/rotate-pdf/
+- Delete PDF Pages: https://pdf.arnzo.com/delete-pdf-pages/
+- Extract PDF Pages: https://pdf.arnzo.com/extract-pdf-pages/
+- JPG to PDF Converter: https://pdf.arnzo.com/jpg-to-pdf/
+- PDF to PNG Converter: https://pdf.arnzo.com/pdf-to-png/
