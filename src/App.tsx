@@ -1,10 +1,7 @@
 import { useRef, useState } from 'react'
 import { FilePlus2, Files, Scissors, RotateCw, Trash2, FileImage, ShieldCheck, LockKeyhole, ArrowDownToLine, X, ChevronDown, Menu, CheckCircle2, AlertCircle, LoaderCircle, FileText, Sparkles } from 'lucide-react'
 import { PDFDocument, degrees } from 'pdf-lib'
-import JSZip from 'jszip'
-import * as pdfjsLib from 'pdfjs-dist'
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
 
 type Tool = 'merge' | 'split' | 'rotate' | 'delete' | 'extract' | 'images' | 'pdfImages'
 type Picked = { id: string; file: File }
@@ -57,8 +54,11 @@ export default function App() {
     try {
       if (tool === 'pdfImages') {
         if (files.length !== 1) throw new Error('Choose exactly one PDF to convert.')
+        const pdfjsLib = await import('pdfjs-dist')
+        pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
         const pdf = await pdfjsLib.getDocument({ data: await files[0].file.arrayBuffer() }).promise
-        const zip = new JSZip()
+        const { default: JSZip } = await import('jszip')
+          const zip = new JSZip()
         for (let n = 1; n <= pdf.numPages; n++) {
           const page = await pdf.getPage(n)
           const viewport = page.getViewport({ scale: 1.6 })
