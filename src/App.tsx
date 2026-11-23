@@ -119,7 +119,7 @@ export default function App() {
       } else if (tool === 'images') {
         const out = await PDFDocument.create()
         for (const item of files) {
-          const bytes = await item.file.arrayBuffer()
+          const bytes = new Uint8Array(await item.file.arrayBuffer())
           const isPng = item.file.name.toLowerCase().endsWith('.png') || item.file.type === 'image/png'
           const valid = isPng ? bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 : bytes[0] === 0xff && bytes[1] === 0xd8
           if (!valid) throw new Error(`${item.file.name} is not a valid JPG or PNG image.`)
