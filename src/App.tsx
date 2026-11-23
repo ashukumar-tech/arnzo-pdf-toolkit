@@ -119,7 +119,7 @@ export default function App() {
         const out = await PDFDocument.create()
         for (const item of files) {
           const bytes = await item.file.arrayBuffer()
-          const image = item.file.type === 'image/png' ? await out.embedPng(bytes) : await out.embedJpg(bytes)
+          const isPng = item.file.name.toLowerCase().endsWith('.png') || item.file.type === 'image/png'\n          const valid = isPng ? bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 : bytes[0] === 0xff && bytes[1] === 0xd8\n          if (!valid) throw new Error(`${item.file.name} is not a valid JPG or PNG image.`)\n          setProgress(`Adding image ${files.indexOf(item)+1} of ${files.length}`)\n          const image = isPng ? await out.embedPng(bytes) : await out.embedJpg(bytes)
           const page = out.addPage([image.width, image.height])
           page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height })
         }
@@ -130,14 +130,14 @@ export default function App() {
         for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
           setProgress(`Merging file ${fileIndex + 1} of ${files.length}`)
           const item = files[fileIndex]
-          const src = await PDFDocument.load(await item.file.arrayBuffer())
+          const raw = new Uint8Array(await item.file.slice(0, 5).arrayBuffer())\n          if (raw[0] !== 0x25 || raw[1] !== 0x50 || raw[2] !== 0x44 || raw[3] !== 0x46 || raw[4] !== 0x2d) throw new Error(`${item.file.name} is not a valid PDF file.`)\n          const src = await PDFDocument.load(await item.file.arrayBuffer())
           const copied = await out.copyPages(src, src.getPageIndices())
           copied.forEach(p => out.addPage(p))
         }
         save(await out.save(), 'arnzo-merged.pdf')
       } else {
         if (files.length !== 1) throw new Error('Choose exactly one PDF for this action.')
-        const src = await PDFDocument.load(await files[0].file.arrayBuffer())
+        const signature = new Uint8Array(await files[0].file.slice(0, 5).arrayBuffer())\n        if (signature[0] !== 0x25 || signature[1] !== 0x50 || signature[2] !== 0x44 || signature[3] !== 0x46 || signature[4] !== 0x2d) throw new Error('This file is not a valid PDF.')\n        const src = await PDFDocument.load(await files[0].file.arrayBuffer())
         const total = src.getPageCount()
         if (tool === 'rotate') {
           const angle = Number(rotation)
