@@ -76,6 +76,20 @@ export default function App() {
           const angle = Number(rotation)
           src.getPages().forEach(p => p.setRotation(degrees((p.getRotation().angle + angle) % 360)))
           save(await src.save(), 'arnzo-rotated.pdf')
+        } else if (tool === 'split') {
+          const selected = pageIndexes(pages, total)
+          if (!selected.length) throw new Error('Enter at least one page number.')
+          const zip = new JSZip()
+          for (const index of selected) {
+            const out = await PDFDocument.create()
+            const [page] = await out.copyPages(src, [index])
+            out.addPage(page)
+            zip.file('page-' + String(index + 1).padStart(3, '0') + '.pdf', await out.save())
+          }
+          const archive = await zip.generateAsync({ type: 'blob' })
+          const url = URL.createObjectURL(archive)
+          const link = document.createElement('a'); link.href = url; link.download = 'arnzo-split-pages.zip'; link.click()
+          setTimeout(() => URL.revokeObjectURL(url), 1500)
         } else {
           const selected = pageIndexes(pages, total)
           if (!selected.length) throw new Error('Enter at least one page number.')
