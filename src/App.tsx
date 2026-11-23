@@ -15,11 +15,19 @@ const tools: { id: Tool; name: string; desc: string; icon: typeof Files }[] = [
   { id: 'compress', name: 'Compress PDF', desc: 'Reduce file size with image-based compression', icon: FileImage }
 ]
 const uid = () => Math.random().toString(36).slice(2)
-const save = (bytes: Uint8Array, name: string) => {
-  const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }))
-  const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove()
-  window.setTimeout(() => URL.revokeObjectURL(url), 10000)
+const MAX_FILE_BYTES = 50 * 1024 * 1024
+const MAX_TOTAL_BYTES = 100 * 1024 * 1024
+const MAX_FILES = 20
+const MAX_PAGES = 150
+const MAX_PIXELS = 8_000_000
+const downloadBlob = (blob: Blob, name: string) => {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url; a.download = name; a.style.display = 'none'
+  document.body.appendChild(a); a.click(); a.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }
+const save = (bytes: Uint8Array, name: string) => downloadBlob(new Blob([bytes as BlobPart], { type: 'application/pdf' }), name)
 const pageIndexes = (input: string, total: number) => {
   const found = new Set<number>()
   input.split(',').map(s => s.trim()).filter(Boolean).forEach(part => {
@@ -64,18 +72,23 @@ export default function App() {
   const run = async () => {
     setError(''); setMessage(''); setProgress('')
     if (!files.length) { setError('Choose at least one file first.'); return }
-    if (files.some(x => x.file.size > 100 * 1024 * 1024)) { setError('A file exceeds the 100 MB per-file limit.'); return }
-    if (files.length > 40) { setError('Maximum 40 files per operation.'); return }
-    if (files.reduce((total, item) => total + item.file.size, 0) > 200 * 1024 * 1024) { setError('Selected files exceed the 200 MB total limit. Process smaller batches.'); return }
+    if (files.some(x => x.file.size > MAX_FILE_BYTES)) { setError('A file exceeds the 50 MB per-file limit.'); return }
+    if (files.length > MAX_FILES) { setError('Maximum 20 files per operation.'); return }
+    if (files.reduce((total, item) => total + item.file.size, 0) > MAX_TOTAL_BYTES) { setError('Selected files exceed the 100 MB total limit. Process smaller batches.'); return }
     cancelRef.current = false
     setBusy(true)
+    let pdfLoadingTask: { destroy: () => Promise<void> } | undefined
+    let pdfDocument: { destroy: () => Promise<void> } | undefined
     try {
       const { PDFDocument, degrees } = await import('pdf-lib')
       if (tool === 'compress') {
         if (files.length !== 1) throw new Error('Choose exactly one PDF to compress.')
         const pdfjsLib = await import('pdfjs-dist')
         pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
-        const pdf = await pdfjsLib.getDocument({ data: await files[0].file.arrayBuffer() }).promise
+        pdfLoadingTask = pdfjsLib.getDocument({ data: await files[0].file.arrayBuffer() })
+        pdfDocument = await pdfLoadingTask.promise
+        const pdf = pdfDocument
+        if (pdf.numPages > MAX_PAGES) throw new Error(`This PDF has ${pdf.numPages} pages. The safe limit is ${MAX_PAGES} pages per operation.`)
         const out = await PDFDocument.create()
         for (let n = 1; n <= pdf.numPages; n++) {
           if (cancelRef.current) throw new Error('Processing cancelled.')
@@ -86,7 +99,7 @@ export default function App() {
           const canvas = document.createElement('canvas')
           const context = canvas.getContext('2d')
           if (!context) throw new Error('Your browser could not create an image canvas.')
-          if (viewport.width * viewport.height > 20000000) throw new Error('This page is too large to render safely on this device. Try a smaller PDF.')
+          if (viewport.width * viewport.height > MAX_PIXELS) throw new Error('This page is too large to render safely on this device. Try a smaller PDF.')
           canvas.width = Math.ceil(viewport.width); canvas.height = Math.ceil(viewport.height)
           await page.render({ canvasContext: context, viewport }).promise
           const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error('Could not compress this page.')), 'image/jpeg', Number(compressionQuality)))
@@ -100,14 +113,18 @@ export default function App() {
         if (files.length !== 1) throw new Error('Choose exactly one PDF to convert.')
         const pdfjsLib = await import('pdfjs-dist')
         pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
-        const pdf = await pdfjsLib.getDocument({ data: await files[0].file.arrayBuffer() }).promise
+        pdfLoadingTask = pdfjsLib.getDocument({ data: await files[0].file.arrayBuffer() })
+        pdfDocument = await pdfLoadingTask.promise
+        const pdf = pdfDocument
+        if (pdf.numPages > MAX_PAGES) throw new Error(`This PDF has ${pdf.numPages} pages. The safe limit is ${MAX_PAGES} pages per operation.`)
         const { default: JSZip } = await import('jszip')
         const zip = new JSZip()
         for (let n = 1; n <= pdf.numPages; n++) {
+          if (cancelRef.current) throw new Error('Processing cancelled.')
           setProgress(`Exporting page ${n} of ${pdf.numPages}`)
           const page = await pdf.getPage(n)
           const viewport = page.getViewport({ scale: 1.6 })
-          if (viewport.width * viewport.height > 20000000) throw new Error('This page is too large to export safely on this device. Try a smaller PDF.')
+          if (viewport.width * viewport.height > MAX_PIXELS) throw new Error('This page is too large to export safely on this device. Try a smaller PDF.')
           const canvas = document.createElement('canvas')
           const context = canvas.getContext('2d')
           if (!context) throw new Error('Your browser could not create an image canvas.')
@@ -115,12 +132,12 @@ export default function App() {
           await page.render({ canvasContext: context, viewport }).promise
           const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error('Could not export page image.')), 'image/png'))
           zip.file('page-' + String(n).padStart(3, '0') + '.png', blob)
-          canvas.width = 0; canvas.height = 0
+          canvas.width = 0; canvas.height = 0; page.cleanup()
         }
-        const archive = await zip.generateAsync({ type: 'blob' })
-        const url = URL.createObjectURL(archive)
-        const link = document.createElement('a'); link.href = url; link.download = 'arnzo-pdf-images.zip'; link.click()
-        setTimeout(() => URL.revokeObjectURL(url), 1500)
+        if (cancelRef.current) throw new Error('Processing cancelled.')
+        setProgress('Building ZIP archive…')
+        const archive = await zip.generateAsync({ type: 'blob' }, meta => setProgress(`Building ZIP archive… ${Math.round(meta.percent)}%`))
+        downloadBlob(archive, 'arnzo-pdf-images.zip')
       } else if (tool === 'images') {
         const out = await PDFDocument.create()
         for (const item of files) {
@@ -151,9 +168,11 @@ export default function App() {
         if (files.length !== 1) throw new Error('Choose exactly one PDF for this action.')
         const src = await PDFDocument.load(await files[0].file.arrayBuffer())
         const total = src.getPageCount()
+        if (total > MAX_PAGES) throw new Error(`This PDF has ${total} pages. The safe limit is ${MAX_PAGES} pages per operation.`)
         if (tool === 'rotate') {
           const angle = Number(rotation)
-          src.getPages().forEach(p => p.setRotation(degrees((p.getRotation().angle + angle) % 360)))
+          const allPages = src.getPages()
+          for (let i = 0; i < allPages.length; i++) { if (cancelRef.current) throw new Error('Processing cancelled.'); setProgress(`Rotating page ${i + 1} of ${total}`); allPages[i].setRotation(degrees((allPages[i].getRotation().angle + angle) % 360)) }
           save(await src.save(), 'arnzo-rotated.pdf')
         } else if (tool === 'split') {
           const { default: JSZip } = await import('jszip')
@@ -168,9 +187,7 @@ export default function App() {
             zip.file('page-' + String(index + 1).padStart(3, '0') + '.pdf', await out.save())
           }
           const archive = await zip.generateAsync({ type: 'blob' })
-          const url = URL.createObjectURL(archive)
-          const link = document.createElement('a'); link.href = url; link.download = 'arnzo-split-pages.zip'; link.click()
-          setTimeout(() => URL.revokeObjectURL(url), 1500)
+          downloadBlob(archive, 'arnzo-split-pages.zip')
         } else {
           const selected = pageIndexes(pages, total)
           if (!selected.length) throw new Error('Enter at least one page number.')
@@ -178,7 +195,7 @@ export default function App() {
           if (!indexes.length) throw new Error('You cannot delete every page from a PDF.')
           const out = await PDFDocument.create()
           const copied = await out.copyPages(src, indexes)
-          copied.forEach(p => out.addPage(p))
+          for (let i = 0; i < copied.length; i++) { if (cancelRef.current) throw new Error('Processing cancelled.'); setProgress(`Preparing page ${i + 1} of ${copied.length}`); out.addPage(copied[i]) }
           save(await out.save(), tool === 'delete' ? 'arnzo-pages-removed.pdf' : 'arnzo-extracted-pages.pdf')
         }
       }
@@ -199,7 +216,7 @@ export default function App() {
       <section className="hero"><div className="eyebrow"><span className="pulse"/> FREE ONLINE PDF TOOLS</div><h1>PDF work. <span>Made simple.</span></h1><p>Everything you need to organize PDF files — fast, free, and private.<br className="desktop"/> Your files stay on your device. Always.</p><div className="trust-row"><span><ShieldCheck size={15}/> 100% browser-based</span><span><LockKeyhole size={15}/> No file uploads</span><span><Sparkles size={15}/> No account needed</span><span><CheckCircle2 size={15}/> No watermark</span></div></section>
       <section className="workspace" id="tools"><aside className="tool-list"><div className="section-label">PDF TOOLS <span>08</span></div>{tools.map(t => { const Icon=t.icon; return <button key={t.id} className={tool===t.id?'tool-item selected':'tool-item'} onClick={()=>switchTool(t.id)}><Icon size={18}/><span><b>{t.name}</b><small>{t.desc}</small></span><ChevronDown className="tool-chevron" size={15}/></button> })}</aside>
       <section className="panel"><div className="panel-head"><div><div className="panel-kicker">ARNZO WORKSPACE</div><h2>{active.name}</h2><p>{active.desc}</p></div><span className="local-pill"><span/> LOCAL PROCESSING</span></div>
-        <div className="dropzone" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();addFiles(e.dataTransfer.files)}} onClick={()=>inputRef.current?.click()} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();inputRef.current?.click()}}}><input ref={inputRef} type="file" hidden multiple={tool==='merge'||tool==='images'} accept={tool==='images'?'.jpg,.jpeg,.png':'application/pdf,.pdf'} onChange={e=>{addFiles(e.target.files);e.target.value=''}}/><div className="upload-icon"><FilePlus2 size={23}/></div><b>Drop your {tool==='images'?'images':'PDF'} here</b><span>or <u>browse files</u> from your device</span><small>{tool==='images'?'JPG and PNG supported':'PDF files only'} · Files stay on this device</small></div>
+        <div className="dropzone" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();addFiles(e.dataTransfer.files)}} onClick={()=>inputRef.current?.click()} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();inputRef.current?.click()}}}><input ref={inputRef} type="file" hidden multiple={tool==='merge'||tool==='images'} accept={tool==='images'?'.jpg,.jpeg,.png':'application/pdf,.pdf'} onChange={e=>{addFiles(e.target.files);e.target.value=''}}/><div className="upload-icon"><FilePlus2 size={23}/></div><b>Drop your {tool==='images'?'images':'PDF'} here</b><span>or <u>browse files</u> from your device</span><small>{tool==='images'?'JPG and PNG supported':'PDF files only'} · Up to 50 MB each · Files stay on this device</small></div>
         {files.length>0&&<div className="file-list"><div className="file-list-title">Selected files <span>{files.length}</span></div>{files.map((f, index) => <div className="file-row" key={f.id}><FileText size={17}/><span>{f.file.name}<small>{(f.file.size/1024/1024).toFixed(2)} MB</small></span>{tool === 'merge' && <><button aria-label="Move file up" disabled={index === 0} onClick={() => moveFile(index, -1)}>↑</button><button aria-label="Move file down" disabled={index === files.length - 1} onClick={() => moveFile(index, 1)}>↓</button></>}<button aria-label="Remove file" onClick={() => setFiles(old => old.filter(x => x.id !== f.id))}><X size={16}/></button></div>)}</div>}
         {(tool==='split'||tool==='delete'||tool==='extract')&&<label className="field-label">PAGE NUMBERS <input value={pages} onChange={e=>setPages(e.target.value)} placeholder="e.g. 1, 3-5, 8"/><small>{tool==='delete'?'Pages to remove':'Pages to include'} · Comma-separated ranges</small></label>}
         {tool==='rotate'&&<label className="field-label">ROTATION ANGLE <select value={rotation} onChange={e=>setRotation(e.target.value)}><option value="90">90° clockwise</option><option value="180">180°</option><option value="270">270° clockwise</option></select></label>}
@@ -216,7 +233,7 @@ export default function App() {
         <details><summary>How can I merge PDF files?</summary><p>Choose Merge PDF, select at least two PDF files, and click Process PDF. Your combined document downloads to your device.</p></details>
         <details><summary>How do I split or extract pages?</summary><p>Choose Split PDF or Extract pages and enter page numbers such as 1, 3-5. Split downloads separate page PDFs in a ZIP file; Extract creates one PDF with the selected pages.</p></details>
         <details><summary>Does compression keep searchable text?</summary><p>No. The current compression method converts pages into JPEG images. Searchable text, links, forms and vector quality are not retained, and a smaller file is not guaranteed.</p></details>
-        <details><summary>Can I use the tools on my phone?</summary><p>The interface supports modern mobile browsers. Very large PDFs may exceed the available memory on some phones.</p></details>
+        <details><summary>Can I use the tools on my phone?</summary><p>The interface supports modern mobile browsers. For stability, each file is limited to 50 MB, batches to 100 MB, and PDF operations to 150 pages. Some older phones may still have lower memory limits.</p></details>
         <details><summary>Which image formats can I convert to PDF?</summary><p>The Images to PDF tool accepts JPG and PNG images.</p></details>
         <details><summary>Do I need to install software?</summary><p>No installation or account is required. Open the website in a modern browser with JavaScript enabled.</p></details>
       </div></section>
