@@ -82,13 +82,13 @@ export default function App() {
           const canvas = document.createElement('canvas')
           const context = canvas.getContext('2d')
           if (!context) throw new Error('Your browser could not create an image canvas.')
-          canvas.width = Math.ceil(viewport.width); canvas.height = Math.ceil(viewport.height)
+          if (viewport.width * viewport.height > 20000000) throw new Error('This page is too large to render safely on this device. Try a smaller PDF.')\n          canvas.width = Math.ceil(viewport.width); canvas.height = Math.ceil(viewport.height)
           await page.render({ canvasContext: context, viewport }).promise
           const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error('Could not compress this page.')), 'image/jpeg', Number(compressionQuality)))
           const image = await out.embedJpg(new Uint8Array(await blob.arrayBuffer()))
           const newPage = out.addPage([baseViewport.width, baseViewport.height])
           newPage.drawImage(image, { x: 0, y: 0, width: baseViewport.width, height: baseViewport.height })
-          canvas.width = 0; canvas.height = 0
+          canvas.width = 0; canvas.height = 0; page.cleanup()
         }
         save(await out.save({ useObjectStreams: true }), 'arnzo-compressed.pdf')
       } else if (tool === 'pdfImages') {
@@ -130,14 +130,14 @@ export default function App() {
         for (let fileIndex = 0; fileIndex < files.length; fileIndex++) {
           setProgress(`Merging file ${fileIndex + 1} of ${files.length}`)
           const item = files[fileIndex]
-          const raw = new Uint8Array(await item.file.slice(0, 5).arrayBuffer())\n          if (raw[0] !== 0x25 || raw[1] !== 0x50 || raw[2] !== 0x44 || raw[3] !== 0x46 || raw[4] !== 0x2d) throw new Error(`${item.file.name} is not a valid PDF file.`)\n          const src = await PDFDocument.load(await item.file.arrayBuffer())
+          const raw = new Uint8Array(await item.file.slice(0, 5).arrayBuffer())\n          const src = await PDFDocument.load(await item.file.arrayBuffer())
           const copied = await out.copyPages(src, src.getPageIndices())
           copied.forEach(p => out.addPage(p))
         }
         save(await out.save(), 'arnzo-merged.pdf')
       } else {
         if (files.length !== 1) throw new Error('Choose exactly one PDF for this action.')
-        const signature = new Uint8Array(await files[0].file.slice(0, 5).arrayBuffer())\n        if (signature[0] !== 0x25 || signature[1] !== 0x50 || signature[2] !== 0x44 || signature[3] !== 0x46 || signature[4] !== 0x2d) throw new Error('This file is not a valid PDF.')\n        const src = await PDFDocument.load(await files[0].file.arrayBuffer())
+        const signature = new Uint8Array(await files[0].file.slice(0, 5).arrayBuffer())\n        const src = await PDFDocument.load(await files[0].file.arrayBuffer())
         const total = src.getPageCount()
         if (tool === 'rotate') {
           const angle = Number(rotation)
@@ -208,6 +208,6 @@ export default function App() {
         <details><summary>Do I need to install software?</summary><p>No installation or account is required. Open the website in a modern browser with JavaScript enabled.</p></details>
       </div></section>
     </main>
-    <footer className="site-footer"><div className="footer-brand"><a className="brand" href="https://arnzo.com/"><span className="brand-mark">A</span><span>ARNZO<span className="brand-sub">PDF TOOLKIT</span></span></a><p>Free, browser-based PDF utilities from ARNZO. Designed for private document workflows.</p></div><div className="footer-column"><b>PDF TOOLS</b><a href="/merge-pdf/">Merge PDF</a><a href="/split-pdf/">Split PDF</a><a href="/compress-pdf/">Compress PDF</a><a href="/jpg-to-pdf/">Convert images to PDF</a></div><div className="footer-column"><b>ARNZO</b><a href="https://arnzo.com/" target="_blank" rel="noreferrer">ARNZO Home</a><a href="https://arnzo.com/" target="_blank" rel="noreferrer">ARNZO Home</a><a href="#how-it-works">How it works</a><a href="#faq">FAQs</a></div><div className="footer-column"><b>INFORMATION</b><a href="/privacy-policy/">Privacy Policy</a><a href="/terms/">Terms of Use</a><a href="/about/">About ARNZO</a><a href="https://arnzo.com/" target="_blank" rel="noreferrer">ARNZO website</a><a href="/llms.txt">LLM information</a></div><div className="footer-bottom"><span>© {new Date().getFullYear()} ARNZO PDF Toolkit. All rights reserved.</span><span>Free to use · No account · Browser-based processing</span></div></footer>
+    <footer className="site-footer"><div className="footer-brand"><a className="brand" href="https://arnzo.com/"><span className="brand-mark">A</span><span>ARNZO<span className="brand-sub">PDF TOOLKIT</span></span></a><p>Free, browser-based PDF utilities from ARNZO. Designed for private document workflows.</p></div><div className="footer-column"><b>PDF TOOLS</b><a href="/merge-pdf/">Merge PDF</a><a href="/split-pdf/">Split PDF</a><a href="/compress-pdf/">Compress PDF</a><a href="/jpg-to-pdf/">Convert images to PDF</a></div><div className="footer-column"><b>ARNZO</b><a href="https://arnzo.com/" target="_blank" rel="noreferrer">ARNZO Home</a><a href="#how-it-works">How it works</a><a href="#faq">FAQs</a></div><div className="footer-column"><b>INFORMATION</b><a href="/privacy-policy/">Privacy Policy</a><a href="/terms/">Terms of Use</a><a href="/about/">About ARNZO</a><a href="https://arnzo.com/" target="_blank" rel="noreferrer">ARNZO website</a><a href="/llms.txt">LLM information</a></div><div className="footer-bottom"><span>© {new Date().getFullYear()} ARNZO PDF Toolkit. All rights reserved.</span><span>Free to use · No account · Browser-based processing</span></div></footer>
   </div>
 }
