@@ -1,21 +1,45 @@
 # ARNZO PDF Toolkit
 
-> Free, privacy-first PDF tools that process documents locally in the browser.
+> Free, browser-based PDF tools for merging, splitting, rotating, extracting, compressing and converting PDF documents. PDF contents are processed locally in the user's browser.
 
-Website: https://pdf.arnzo.com/
-Publisher: ARNZO (https://arnzo.com/)
+- Product name: ARNZO PDF Toolkit
+- Website: https://pdf.arnzo.com/
+- Publisher: ARNZO
+- Publisher website: https://arnzo.com/
+- Product type: Free web application / PDF utilities
+- Pricing: Free; no account required
+- Primary language: English
+- Platform: Modern desktop and mobile browsers with JavaScript enabled
 
-## Privacy
-PDF contents are processed in the user's browser. The application is designed not to upload PDF documents to ARNZO servers. No account is required.
+## Privacy and processing
+PDF files are selected from the user's device and processed client-side using browser APIs and open-source JavaScript libraries. PDF contents are not uploaded to ARNZO servers for processing. Large files may be constrained by available device memory. The site loads fonts from Google Fonts; this does not transmit PDF contents.
 
-## Tools
-- Merge PDF files
-- Compress PDF pages locally as JPEG images; output may not be smaller and text is not searchable
-- Split PDF pages
-- Rotate PDF pages
-- Delete selected pages
-- Extract selected pages
-- Convert JPG and PNG images to PDF
+## Available tools
+- Merge PDF: combine two or more PDF files into one PDF.
+- Split PDF: export selected pages as individual PDF files inside a ZIP archive.
+- Extract pages: create a new PDF containing selected pages.
+- Delete pages: remove selected pages from a PDF.
+- Rotate PDF: rotate all pages by 90, 180 or 270 degrees.
+- Images to PDF: create a PDF from JPG and PNG images.
+- PDF to images: render PDF pages as PNG files in a ZIP archive.
+- Compress PDF: rasterize pages into JPEG images at a selected quality. This does not preserve searchable text, links, forms or vector quality; output may not be smaller.
 
-## Technology
-React, TypeScript, Vite and pdf-lib.
+## How to use
+1. Open https://pdf.arnzo.com/
+2. Select a PDF tool.
+3. Choose files from the device.
+4. Set page ranges or quality if the selected tool asks for them.
+5. Process locally and download the result.
+
+## Important limitations
+- Processing speed and maximum practical file size depend on device memory and browser performance.
+- Password-protected PDFs may not be supported by all operations.
+- Compression is image-based and can reduce document fidelity.
+- Images to PDF currently accepts JPG and PNG.
+
+## Official references
+- Website: https://pdf.arnzo.com/
+- FAQ: https://pdf.arnzo.com/#faq
+- Privacy details: https://pdf.arnzo.com/#privacy
+- Sitemap: https://pdf.arnzo.com/sitemap.xml
+- ARNZO: https://arnzo.com/
