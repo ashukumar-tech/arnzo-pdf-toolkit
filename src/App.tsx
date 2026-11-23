@@ -33,7 +33,7 @@ const pageIndexes = (input: string, total: number) => {
   return [...found].sort((a,b) => a-b)
 }
 export default function App() {
-  const [tool, setTool] = useState<Tool>('merge')
+  const [tool, setTool] = useState<Tool>(() => { const requested = new URLSearchParams(window.location.search).get('tool'); return tools.some(t => t.id === requested) ? requested as Tool : 'merge' })
   const [files, setFiles] = useState<Picked[]>([])
   const [pages, setPages] = useState('1')
   const [rotation, setRotation] = useState('90')
@@ -184,6 +184,6 @@ export default function App() {
         <details><summary>Do I need to install software?</summary><p>No installation or account is required. Open the website in a modern browser with JavaScript enabled.</p></details>
       </div></section>
     </main>
-    <footer className="site-footer"><div className="footer-brand"><a className="brand" href="https://arnzo.com/"><span className="brand-mark">A</span><span>ARNZO<span className="brand-sub">PDF TOOLKIT</span></span></a><p>Free, browser-based PDF utilities from ARNZO. Designed for private document workflows.</p></div><div className="footer-column"><b>PDF TOOLS</b><a href="#tools">Merge PDF</a><a href="#tools">Split PDF</a><a href="#tools">Compress PDF</a><a href="#tools">Convert images to PDF</a></div><div className="footer-column"><b>ARNZO</b><a href="https://arnzo.com/" target="_blank" rel="noreferrer">ARNZO Home</a><a href="https://arnzo.com/" target="_blank" rel="noreferrer">ARNZO Utilities</a><a href="#how-it-works">How it works</a><a href="#faq">FAQs</a></div><div className="footer-column"><b>INFORMATION</b><a href="#privacy">Privacy & local processing</a><a href="#privacy">Privacy details</a><a href="https://arnzo.com/" target="_blank" rel="noreferrer">ARNZO website</a><a href="/llms.txt">LLM information</a></div><div className="footer-bottom"><span>© {new Date().getFullYear()} ARNZO PDF Toolkit. All rights reserved.</span><span>Free to use · No account · Browser-based processing</span></div></footer>
+    <footer className="site-footer"><div className="footer-brand"><a className="brand" href="https://arnzo.com/"><span className="brand-mark">A</span><span>ARNZO<span className="brand-sub">PDF TOOLKIT</span></span></a><p>Free, browser-based PDF utilities from ARNZO. Designed for private document workflows.</p></div><div className="footer-column"><b>PDF TOOLS</b><a href="/merge-pdf/">Merge PDF</a><a href="/split-pdf/">Split PDF</a><a href="/compress-pdf/">Compress PDF</a><a href="/jpg-to-pdf/">Convert images to PDF</a></div><div className="footer-column"><b>ARNZO</b><a href="https://arnzo.com/" target="_blank" rel="noreferrer">ARNZO Home</a><a href="https://arnzo.com/" target="_blank" rel="noreferrer">ARNZO Utilities</a><a href="#how-it-works">How it works</a><a href="#faq">FAQs</a></div><div className="footer-column"><b>INFORMATION</b><a href="#privacy">Privacy & local processing</a><a href="#privacy">Privacy details</a><a href="https://arnzo.com/" target="_blank" rel="noreferrer">ARNZO website</a><a href="/llms.txt">LLM information</a></div><div className="footer-bottom"><span>© {new Date().getFullYear()} ARNZO PDF Toolkit. All rights reserved.</span><span>Free to use · No account · Browser-based processing</span></div></footer>
   </div>
 }
