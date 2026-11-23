@@ -184,6 +184,10 @@ export default function App() {
           const isPng = item.file.name.toLowerCase().endsWith('.png') || item.file.type === 'image/png'
           const valid = isPng ? bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 : bytes[0] === 0xff && bytes[1] === 0xd8
           if (!valid) throw new Error(`${item.file.name} is not a valid JPG or PNG image.`)
+          const bitmap = await createImageBitmap(item.file)
+          const pixelCount = bitmap.width * bitmap.height
+          bitmap.close()
+          if (pixelCount > MAX_PIXELS) throw new Error(`${item.file.name} is too large to process safely. Choose an image up to 6 megapixels.`)
           setProgress(`Adding image ${files.indexOf(item)+1} of ${files.length}`)
           const image = isPng ? await out.embedPng(bytes) : await out.embedJpg(bytes)
           const page = out.addPage([image.width, image.height])
@@ -274,7 +278,7 @@ export default function App() {
         {(tool==='split'||tool==='delete'||tool==='extract')&&<label className="field-label">PAGE NUMBERS <input value={pages} onChange={e=>setPages(e.target.value)} placeholder="e.g. 1, 3-5, 8"/><small>{tool==='delete'?'Pages to remove':'Pages to include'} · Comma-separated ranges</small></label>}
         {tool==='rotate'&&<label className="field-label">ROTATION ANGLE <select value={rotation} onChange={e=>setRotation(e.target.value)}><option value="90">90° clockwise</option><option value="180">180°</option><option value="270">270° clockwise</option></select></label>}
         {tool==='compress'&&<><label className="field-label">IMAGE QUALITY <select value={compressionQuality} onChange={e=>setCompressionQuality(e.target.value)}><option value="0.45">Smaller file · lower quality</option><option value="0.65">Balanced</option><option value="0.82">Higher quality · larger file</option></select></label><p className="compression-warning">Compression converts pages into images. Searchable text, links, forms and vector quality will not be preserved. File size reduction is not guaranteed.</p></>}
-        <div className="action-row"><button className="primary-btn" onClick={run} disabled={busy||files.length===0}>{busy?<><LoaderCircle className="spin" size={18}/> Processing locally…</>:<>Process PDF <ArrowDownToLine size={17}/></>}</button>{busy&&<button className="cancel-btn" onClick={()=>{cancelRef.current=true;setProgress('Cancelling after the current page…')}}>Cancel</button>}</div>
+        <div className="action-row"><button className="primary-btn" onClick={run} disabled={busy||files.length===0}>{busy?<><LoaderCircle className="spin" size={18}/> Processing locally…</>:<>Process PDF <ArrowDownToLine size={17}/></>}</button>{busy&&<button className="cancel-btn" disabled={progress.startsWith('Building ZIP archive')} onClick={()=>{cancelRef.current=true;setProgress('Cancelling after the current page…')}}>{progress.startsWith('Building ZIP archive')?'Finishing ZIP…':'Cancel'}</button>}</div>
         {progress && <div className="notice" role="status">{progress}</div>}{error&&<div className="notice error"><AlertCircle size={17}/>{error}</div>}{message&&<div className="notice success"><CheckCircle2 size={17}/>{message}</div>}
         <p className="panel-foot"><LockKeyhole size={13}/> Files are processed locally in your browser and are never uploaded.</p>
       </section></section>
