@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { FilePlus2, Files, Scissors, RotateCw, Trash2, FileImage, ShieldCheck, LockKeyhole, ArrowDownToLine, X, Plus, ChevronDown, Menu, CheckCircle2, AlertCircle, LoaderCircle, FileText, Sparkles } from 'lucide-react'
-import { PDFDocument, degrees } from 'pdf-lib'
+import { PDFDocument, degrees } from 'pdf-lib'\nimport JSZip from 'jszip'
 
 type Tool = 'merge' | 'split' | 'rotate' | 'delete' | 'extract' | 'images'
 type Picked = { id: string; file: File }
