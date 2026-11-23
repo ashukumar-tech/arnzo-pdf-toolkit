@@ -3,7 +3,7 @@ import { FilePlus2, Files, Scissors, RotateCw, Trash2, FileImage, ShieldCheck, L
 import { PDFDocument, degrees } from 'pdf-lib'
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 
-type Tool = 'merge' | 'split' | 'rotate' | 'delete' | 'extract' | 'images' | 'pdfImages'
+type Tool = 'merge' | 'split' | 'rotate' | 'delete' | 'extract' | 'images' | 'pdfImages' | 'compress'
 type Picked = { id: string; file: File }
 const tools: { id: Tool; name: string; desc: string; icon: typeof Files }[] = [
   { id: 'merge', name: 'Merge PDF', desc: 'Combine multiple PDFs into one file', icon: Files },
@@ -12,7 +12,8 @@ const tools: { id: Tool; name: string; desc: string; icon: typeof Files }[] = [
   { id: 'delete', name: 'Delete pages', desc: 'Remove unwanted pages from a PDF', icon: Trash2 },
   { id: 'extract', name: 'Extract pages', desc: 'Create a PDF from selected pages', icon: FilePlus2 },
   { id: 'images', name: 'Images to PDF', desc: 'Turn JPG and PNG images into a PDF', icon: FileImage },
-  { id: 'pdfImages', name: 'PDF to images', desc: 'Export PDF pages as PNG images', icon: FileImage }
+  { id: 'pdfImages', name: 'PDF to images', desc: 'Export PDF pages as PNG images', icon: FileImage },
+  { id: 'compress', name: 'Compress PDF', desc: 'Reduce file size with image-based compression', icon: FileImage }
 ]
 const uid = () => Math.random().toString(36).slice(2)
 const save = (bytes: Uint8Array, name: string) => {
@@ -36,6 +37,7 @@ export default function App() {
   const [files, setFiles] = useState<Picked[]>([])
   const [pages, setPages] = useState('1')
   const [rotation, setRotation] = useState('90')
+  const [compressionQuality, setCompressionQuality] = useState('0.65')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -52,7 +54,29 @@ export default function App() {
     if (!files.length) { setError('Choose at least one file first.'); return }
     setBusy(true)
     try {
-      if (tool === 'pdfImages') {
+      if (tool === 'compress') {
+        if (files.length !== 1) throw new Error('Choose exactly one PDF to compress.')
+        const pdfjsLib = await import('pdfjs-dist')
+        pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
+        const pdf = await pdfjsLib.getDocument({ data: await files[0].file.arrayBuffer() }).promise
+        const out = await PDFDocument.create()
+        for (let n = 1; n <= pdf.numPages; n++) {
+          const page = await pdf.getPage(n)
+          const baseViewport = page.getViewport({ scale: 1 })
+          const viewport = page.getViewport({ scale: 1.25 })
+          const canvas = document.createElement('canvas')
+          const context = canvas.getContext('2d')
+          if (!context) throw new Error('Your browser could not create an image canvas.')
+          canvas.width = Math.ceil(viewport.width); canvas.height = Math.ceil(viewport.height)
+          await page.render({ canvasContext: context, viewport }).promise
+          const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error('Could not compress this page.')), 'image/jpeg', Number(compressionQuality)))
+          const image = await out.embedJpg(new Uint8Array(await blob.arrayBuffer()))
+          const newPage = out.addPage([baseViewport.width, baseViewport.height])
+          newPage.drawImage(image, { x: 0, y: 0, width: baseViewport.width, height: baseViewport.height })
+          canvas.width = 0; canvas.height = 0
+        }
+        save(await out.save({ useObjectStreams: true }), 'arnzo-compressed.pdf')
+      } else if (tool === 'pdfImages') {
         if (files.length !== 1) throw new Error('Choose exactly one PDF to convert.')
         const pdfjsLib = await import('pdfjs-dist')
         pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker
@@ -142,6 +166,7 @@ export default function App() {
         {files.length>0&&<div className="file-list"><div className="file-list-title">Selected files <span>{files.length}</span></div>{files.map(f=><div className="file-row" key={f.id}><FileText size={17}/><span>{f.file.name}<small>{(f.file.size/1024/1024).toFixed(2)} MB</small></span><button aria-label="Remove file" onClick={()=>setFiles(old=>old.filter(x=>x.id!==f.id))}><X size={16}/></button></div>)}</div>}
         {(tool==='split'||tool==='delete'||tool==='extract')&&<label className="field-label">PAGE NUMBERS <input value={pages} onChange={e=>setPages(e.target.value)} placeholder="e.g. 1, 3-5, 8"/><small>{tool==='delete'?'Pages to remove':'Pages to include'} · Comma-separated ranges</small></label>}
         {tool==='rotate'&&<label className="field-label">ROTATION ANGLE <select value={rotation} onChange={e=>setRotation(e.target.value)}><option value="90">90° clockwise</option><option value="180">180°</option><option value="270">270° clockwise</option></select></label>}
+        {tool==='compress'&&<><label className="field-label">IMAGE QUALITY <select value={compressionQuality} onChange={e=>setCompressionQuality(e.target.value)}><option value="0.45">Smaller file · lower quality</option><option value="0.65">Balanced</option><option value="0.82">Higher quality · larger file</option></select></label><p className="compression-warning">Compression converts pages into images. Searchable text, links, forms and vector quality will not be preserved. File size reduction is not guaranteed.</p></>}
         <button className="primary-btn" onClick={run} disabled={busy||files.length===0}>{busy?<><LoaderCircle className="spin" size={18}/> Processing locally…</>:<>Process PDF <ArrowDownToLine size={17}/></>}</button>
         {error&&<div className="notice error"><AlertCircle size={17}/>{error}</div>}{message&&<div className="notice success"><CheckCircle2 size={17}/>{message}</div>}
         <p className="panel-foot"><LockKeyhole size={13}/> Files are processed locally in your browser and are never uploaded.</p>
