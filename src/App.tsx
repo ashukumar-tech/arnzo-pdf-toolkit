@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react'
 import { FilePlus2, Files, Scissors, RotateCw, Trash2, FileImage, ShieldCheck, LockKeyhole, ArrowDownToLine, X, Plus, ChevronDown, Menu, CheckCircle2, AlertCircle, LoaderCircle, FileText, Sparkles } from 'lucide-react'
-import { PDFDocument, degrees } from 'pdf-lib'\nimport JSZip from 'jszip'
+import { PDFDocument, degrees } from 'pdf-lib'\nimport JSZip from 'jszip'\nimport * as pdfjsLib from 'pdfjs-dist'\npdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString()
 
-type Tool = 'merge' | 'split' | 'rotate' | 'delete' | 'extract' | 'images'
+type Tool = 'merge' | 'split' | 'rotate' | 'delete' | 'extract' | 'images' | 'pdfImages'
 type Picked = { id: string; file: File }
 const tools: { id: Tool; name: string; desc: string; icon: typeof Files }[] = [
   { id: 'merge', name: 'Merge PDF', desc: 'Combine multiple PDFs into one file', icon: Files },
@@ -10,7 +10,7 @@ const tools: { id: Tool; name: string; desc: string; icon: typeof Files }[] = [
   { id: 'rotate', name: 'Rotate PDF', desc: 'Rotate all pages in your document', icon: RotateCw },
   { id: 'delete', name: 'Delete pages', desc: 'Remove unwanted pages from a PDF', icon: Trash2 },
   { id: 'extract', name: 'Extract pages', desc: 'Create a PDF from selected pages', icon: FilePlus2 },
-  { id: 'images', name: 'Images to PDF', desc: 'Turn JPG and PNG images into a PDF', icon: FileImage }
+  { id: 'images', name: 'Images to PDF', desc: 'Turn JPG and PNG images into a PDF', icon: FileImage },\n  { id: 'pdfImages', name: 'PDF to images', desc: 'Export PDF pages as PNG images', icon: FileImage }
 ]
 const uid = () => Math.random().toString(36).slice(2)
 const save = (bytes: Uint8Array, name: string) => {
@@ -50,7 +50,7 @@ export default function App() {
     if (!files.length) { setError('Choose at least one file first.'); return }
     setBusy(true)
     try {
-      if (tool === 'images') {
+      if (tool === 'pdfImages') {\n        if (files.length !== 1) throw new Error('Choose exactly one PDF to convert.')\n        const pdf = await pdfjsLib.getDocument({ data: await files[0].file.arrayBuffer() }).promise\n        const zip = new JSZip()\n        for (let n = 1; n <= pdf.numPages; n++) {\n          const page = await pdf.getPage(n)\n          const viewport = page.getViewport({ scale: 1.6 })\n          const canvas = document.createElement('canvas')\n          const context = canvas.getContext('2d')\n          if (!context) throw new Error('Your browser could not create an image canvas.')\n          canvas.width = Math.ceil(viewport.width); canvas.height = Math.ceil(viewport.height)\n          await page.render({ canvas, canvasContext: context, viewport }).promise\n          const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error('Could not export page image.')), 'image/png'))\n          zip.file('page-' + String(n).padStart(3, '0') + '.png', blob)\n          canvas.width = 0; canvas.height = 0\n        }\n        const archive = await zip.generateAsync({ type: 'blob' })\n        const url = URL.createObjectURL(archive)\n        const link = document.createElement('a'); link.href = url; link.download = 'arnzo-pdf-images.zip'; link.click()\n        setTimeout(() => URL.revokeObjectURL(url), 1500)\n      } else if (tool === 'images') {
         const out = await PDFDocument.create()
         for (const item of files) {
           const bytes = await item.file.arrayBuffer()
