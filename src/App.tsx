@@ -19,7 +19,8 @@ const MAX_FILE_BYTES = 50 * 1024 * 1024
 const MAX_TOTAL_BYTES = 100 * 1024 * 1024
 const MAX_FILES = 20
 const MAX_PAGES = 150
-const MAX_PIXELS = 8_000_000
+const MAX_RENDER_PAGES = 60
+const MAX_PIXELS = 6_000_000
 const downloadBlob = (blob: Blob, name: string) => {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -125,7 +126,7 @@ export default function App() {
         pdfLoadingTask = pdfjsLib.getDocument({ data: await files[0].file.arrayBuffer() })
         pdfDocument = await pdfLoadingTask.promise
         const pdf = pdfDocument
-        if (pdf.numPages > MAX_PAGES) throw new Error(`This PDF has ${pdf.numPages} pages. The safe limit is ${MAX_PAGES} pages per operation.`)
+        if (pdf.numPages > MAX_RENDER_PAGES) throw new Error(`Image-based processing is limited to ${MAX_RENDER_PAGES} pages to protect device memory.`)
         const out = await PDFDocument.create()
         for (let n = 1; n <= pdf.numPages; n++) {
           if (cancelRef.current) throw new Error('Processing cancelled.')
@@ -153,7 +154,7 @@ export default function App() {
         pdfLoadingTask = pdfjsLib.getDocument({ data: await files[0].file.arrayBuffer() })
         pdfDocument = await pdfLoadingTask.promise
         const pdf = pdfDocument
-        if (pdf.numPages > MAX_PAGES) throw new Error(`This PDF has ${pdf.numPages} pages. The safe limit is ${MAX_PAGES} pages per operation.`)
+        if (pdf.numPages > MAX_RENDER_PAGES) throw new Error(`Image export is limited to ${MAX_RENDER_PAGES} pages to protect device memory.`)
         const { default: JSZip } = await import('jszip')
         const zip = new JSZip()
         for (let n = 1; n <= pdf.numPages; n++) {
